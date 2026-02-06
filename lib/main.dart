@@ -773,11 +773,10 @@ class _HomePageState extends State<HomePage> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  if (_index > 0)
-                    OutlinedButton(
-                      onPressed: _back,
-                      child: const Text('Назад'),
-                    ),
+                  OutlinedButton(
+                    onPressed: _index > 0 ? _back : null,
+                    child: const Text('Назад'),
+                  ),
                   FilledButton(
                     onPressed: _selectedOption == null ? null : _check,
                     child: const Text('Проверить ответ'),
@@ -801,11 +800,10 @@ class _HomePageState extends State<HomePage> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  if (_index > 0)
-                    OutlinedButton(
-                      onPressed: _back,
-                      child: const Text('Назад'),
-                    ),
+                  OutlinedButton(
+                    onPressed: _index > 0 ? _back : null,
+                    child: const Text('Назад'),
+                  ),
                   FilledButton(
                     onPressed: _next,
                     child: Text(
