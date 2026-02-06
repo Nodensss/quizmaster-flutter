@@ -66,6 +66,7 @@ class _HomePageState extends State<HomePage> {
   bool _checked = false;
   bool _lastCorrect = false;
   int? _selectedOption;
+  List<Map<String, dynamic>?> _answers = [];
   List<Map<String, dynamic>> _wrong = [];
   String _mode = 'Основная викторина';
   String _selectionLabel = 'Все файлы';
@@ -129,6 +130,25 @@ class _HomePageState extends State<HomePage> {
             _sessionFiles =
                 (m['sessionFiles'] as List?)?.map((e) => '$e').toList() ?? [];
             _attemptSaved = _asBool(m['attemptSaved'], false);
+            final rawAnswers =
+                (m['answers'] as List?)
+                    ?.map((e) => e is Map ? Map<String, dynamic>.from(e) : null)
+                    .toList();
+            if (rawAnswers != null && rawAnswers.length == qs.length) {
+              _answers = rawAnswers;
+            } else {
+              _answers = List<Map<String, dynamic>?>.filled(
+                qs.length,
+                null,
+                growable: false,
+              );
+              if (_checked && _selectedOption != null && _index < qs.length) {
+                _answers[_index] = {
+                  'selected': _selectedOption,
+                  'correct': _lastCorrect,
+                };
+              }
+            }
           }
         }
       } catch (_) {
@@ -158,6 +178,7 @@ class _HomePageState extends State<HomePage> {
       'checked': _checked,
       'lastCorrect': _lastCorrect,
       'selectedOption': _selectedOption,
+      'answers': _answers,
       'wrong': _wrong,
       'mode': _mode,
       'selectionLabel': _selectionLabel,
@@ -349,6 +370,11 @@ class _HomePageState extends State<HomePage> {
       _checked = false;
       _lastCorrect = false;
       _selectedOption = null;
+      _answers = List<Map<String, dynamic>?>.filled(
+        qs.length,
+        null,
+        growable: false,
+      );
       _wrong = [];
       _mode = 'Основная викторина';
       _selectionLabel = _selectedFile == _all
@@ -398,6 +424,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _checked = true;
       _lastCorrect = ok;
+      _answers[_index] = {'selected': _selectedOption, 'correct': ok};
       if (ok) {
         _score++;
       } else {
@@ -411,13 +438,45 @@ class _HomePageState extends State<HomePage> {
     if (!_quizStarted || !_checked) return;
     setState(() {
       _index++;
-      _checked = false;
-      _lastCorrect = false;
-      _selectedOption = null;
-      if (_index >= _questions.length) _registerAttempt();
+      if (_index >= _questions.length) {
+        _checked = false;
+        _lastCorrect = false;
+        _selectedOption = null;
+        _registerAttempt();
+        return;
+      }
+      _loadCurrentQuestionState();
     });
     unawaited(_saveSession());
     unawaited(_saveHistory());
+  }
+
+  void _back() {
+    if (!_quizStarted || _index == 0) return;
+    setState(() {
+      _index--;
+      _loadCurrentQuestionState();
+    });
+    unawaited(_saveSession());
+  }
+
+  void _loadCurrentQuestionState() {
+    if (_index < 0 || _index >= _questions.length) {
+      _checked = false;
+      _lastCorrect = false;
+      _selectedOption = null;
+      return;
+    }
+    final answer = _answers[_index];
+    if (answer == null) {
+      _checked = false;
+      _lastCorrect = false;
+      _selectedOption = null;
+      return;
+    }
+    _checked = true;
+    _lastCorrect = _asBool(answer['correct'], false);
+    _selectedOption = _asIntN(answer['selected']);
   }
 
   void _registerAttempt() {
@@ -459,6 +518,11 @@ class _HomePageState extends State<HomePage> {
       _checked = false;
       _lastCorrect = false;
       _selectedOption = null;
+      _answers = List<Map<String, dynamic>?>.filled(
+        qs.length,
+        null,
+        growable: false,
+      );
       _wrong = [];
       _mode = 'Тренировка ошибок';
       _attemptSaved = false;
@@ -474,6 +538,7 @@ class _HomePageState extends State<HomePage> {
     _checked = false;
     _lastCorrect = false;
     _selectedOption = null;
+    _answers = [];
     _wrong = [];
     _mode = 'Основная викторина';
     _selectionLabel = 'Все файлы';
@@ -704,9 +769,20 @@ class _HomePageState extends State<HomePage> {
             }),
             const SizedBox(height: 12),
             if (!_checked)
-              FilledButton(
-                onPressed: _selectedOption == null ? null : _check,
-                child: const Text('Проверить ответ'),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (_index > 0)
+                    OutlinedButton(
+                      onPressed: _back,
+                      child: const Text('Назад'),
+                    ),
+                  FilledButton(
+                    onPressed: _selectedOption == null ? null : _check,
+                    child: const Text('Проверить ответ'),
+                  ),
+                ],
               ),
             if (_checked) ...[
               Text(
@@ -721,13 +797,24 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 10),
-              FilledButton(
-                onPressed: _next,
-                child: Text(
-                  _index + 1 == _questions.length
-                      ? 'Завершить'
-                      : 'Следующий вопрос',
-                ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (_index > 0)
+                    OutlinedButton(
+                      onPressed: _back,
+                      child: const Text('Назад'),
+                    ),
+                  FilledButton(
+                    onPressed: _next,
+                    child: Text(
+                      _index + 1 == _questions.length
+                          ? 'Завершить'
+                          : 'Следующий вопрос',
+                    ),
+                  ),
+                ],
               ),
             ],
           ],
