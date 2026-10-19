@@ -1,6 +1,6 @@
 {
-    "name": "quizmaster_flutter",
-    "short_name": "quizmaster_flutter",
+    "name": "Тренажёр викторин",
+    "short_name": "Викторины",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
